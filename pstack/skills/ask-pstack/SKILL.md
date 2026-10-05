@@ -6,7 +6,9 @@ disable-model-invocation: true
 
 # Ask Pstack
 
-Recommend a route through pstack, as ask-matt does for Matt's skills. Routing is read-only by default. Do not start the recommended workflow unless the user's request also asks you to execute it.
+Recommend a route through pstack, as ask-matt does for Matt's skills. Routing is read-only. Do not start the recommended workflow, chain another router or change selection in this invocation, even if the request also mentions execution. Give the final native `/skill:<name>` invocation for a separate user entry, then stop. Say **“no skill needed”** when direct work is better.
+
+Use `node ~/.pi/agent/lib/skill-adoption.mjs inventory --cwd <CURRENT_PROJECT_ROOT>` for actual personal and persisted-trusted project configuration, accounting separately for known session-only trust or CLI overrides. Do not grant trust, install resources or run candidate scripts. Distinguish present, enabled, unqualified and blocked. Missing qualification evidence means unqualified. Compare any evidence with model + runtime/extensions + instructions + tools + task environment; loading alone is not qualification. The collection's `skill-adoption.json` declares supporting reads, not independent workflow entry or separately controlled actions.
 
 ## Find the route
 

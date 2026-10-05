@@ -18,13 +18,13 @@ The reusable router pattern is: identify the outcome, choose a narrow route, ins
 
 All pstack skills in this fork are user-invoked by default. The shared Matt fork follows the same policy. They remain discoverable through explicit `/skill:<name>` commands but are excluded from Pi's automatically advertised skill context.
 
-To promote one skill, change its `SKILL.md` frontmatter to `disable-model-invocation: false`, then reload Pi. For a Matt skill, also set `policy.allow_implicit_invocation: true` in its `agents/openai.yaml` to keep Codex metadata aligned. Review its description for a precise automatic trigger before promotion. Change the shared source for all consumers, or the project worktree for a project-specific promotion.
+To promote one skill, explicitly select it in personal/project Pi configuration and add its collection/name to the personal model-invocation allowlist in `~/.pi/agent/skill-adoption.json`, then deliberately change its `SKILL.md` frontmatter to `disable-model-invocation: false`. Run the adoption checks before activating the prepared source. Qualification remains a separate model/runtime/task evidence decision, not a consequence of promotion. For a Matt skill, also set `policy.allow_implicit_invocation: true` in its `agents/openai.yaml` to keep Codex metadata aligned. Review its description for a precise automatic trigger before promotion. Change the shared source for all consumers, or the project worktree for a project-specific promotion.
 
-This flag controls discovery, not access to files. Explicitly started workflows can read supporting instructions within their authorized task. Existing startup instructions may also require a skill independently of its metadata. Other installed skill collections are unchanged by this fork policy.
+This flag controls discovery, not access to files. Explicitly started workflows can read supporting instructions within their authorized task. Mandatory startup safeguards remain independent of optional workflow selection; optional workflows require explicit user entry. Other installed skill collections are unchanged by this fork policy.
 
 ## Change the personal selection
 
-Edit the matching entry in `~/.pi/agent/settings.json`. Skill filters use package-relative directory paths, not declared command names. The initial pstack selection includes `skills/**` except `skills/teach/**` and `skills/tdd/**`. Those names are provided by Matt's collection instead. The pstack files remain available for project variants.
+Edit the matching entry in `~/.pi/agent/settings.json`. Skill filters use package-relative directory paths, not declared command names. The personal pstack selection uses deny-by-default filtering and 49 exact skill directory includes. It excludes `teach` and `tdd`. Those names are provided by Matt's collection instead. The pstack files remain available for project variants.
 
 Matt's initial selection comes from locally available session evidence, including explicit user commands and skill-file loads. Loads can indicate inspection rather than execution. Evidence and loader validation are stored under `~/.pi/agent/audits/`.
 
@@ -55,7 +55,7 @@ For a worktree at `<project>/.pi/packages/pstack`, the project package root is `
 
 Merge this into existing project settings. The same-source shared entry replaces the personal selection for that project, so it must list every shared skill the project should retain. Select replacements from the project package without also enabling the shared same-named skills. Apply the same pattern independently to Matt's collection.
 
-Merge `upstream/main` into the shared `pi` branch for upstream updates. Merge the validated `pi` branch into a project branch when that project is ready. Editing a project worktree changes the project variant, not the shared checkout.
+Prepare upstream updates outside the live checkout, compare against the last qualified configuration, check invocation flags, dependencies and the explicit selection lock, then deliberately activate reviewed changes. Do not merge upstream directly into the live checkout as an activation gate. Merge the validated `pi` branch into a project branch only when that project is ready. Editing a project worktree changes the project variant, not the shared checkout.
 
 ## Compatibility limits
 
