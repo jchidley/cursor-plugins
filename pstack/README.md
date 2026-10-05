@@ -12,6 +12,10 @@ there's a growing sense that ai writes too much slop code. i agree. i don't want
 
 fork it. improve it. make it yours. PRs are welcome! 
 
+## Pi adaptation
+
+For this fork's Pi package setup, skill selection, and compatibility limits, see [Use this fork with Pi](./docs/pi.md). Start routing with `/skill:ask-pstack`.
+
 ## install
 
 ```bash

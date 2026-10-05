@@ -1,0 +1,54 @@
+# Use this fork with Pi
+
+This fork exposes pstack as a local Pi skill package. The package manifest is `../package.json`; personal and trusted project Pi settings select which skills load. Packaging does not implement Cursor's runtime or port every workflow.
+
+## Shared editing locations
+
+On this machine, `/home/jack/git/cursor-plugins` is the fork checkout on `pi`. `/home/jack/git/pstack` links to its `pstack` directory. Edit skills through either path and commit from the repository root.
+
+Matt's shared collection is `/home/jack/git/mattpocock-skills`, also on its own `pi` branch. Its selected directories are registered separately in `~/.pi/agent/settings.json`.
+
+## Choose a workflow
+
+Use `/skill:ask-pstack <your situation>` for a recommendation from this collection. It reads candidate skills, checks availability and dependencies, and recommends rather than executing by default. `/skill:ask-matt` serves the same purpose for Matt's collection.
+
+The reusable router pattern is: identify the outcome, choose a narrow route, inspect its source, check installed availability and runtime prerequisites, then recommend the next invocation. Each collection owns its map rather than duplicating another collection's workflows.
+
+## Change the personal selection
+
+Edit the matching entry in `~/.pi/agent/settings.json`. Skill filters use package-relative directory paths, not declared command names. The initial pstack selection includes `skills/**` except `skills/teach/**` and `skills/tdd/**`. Those names are provided by Matt's collection instead. The pstack files remain available for project variants.
+
+Matt's initial selection comes from locally available session evidence, including explicit user commands and skill-file loads. Loads can indicate inspection rather than execution. Evidence and loader validation are stored under `~/.pi/agent/audits/`.
+
+Legacy Matt symlinks under `~/.agents/skills` remain intact, but `.ignore` excludes them from Pi auto-discovery. This prevents unselected skills from bypassing package filters and project overrides. Other harnesses that honor this ignore file may also hide the links.
+
+Restart Pi or run `/reload` after changing resources. After relocating the current session's working directory, restart from `/home/jack/git/cursor-plugins` instead of continuing from the old directory identity.
+
+## Substitute project versions
+
+A project variant is a sparse worktree of this fork on a project-named branch. Its worktree retains the repository's `pstack/` directory. Keep the nested worktree out of the consuming repository's Git tracking.
+
+For a worktree at `<project>/.pi/packages/pstack`, the project package root is `./packages/pstack/pstack`, relative to the project's `.pi` directory. A project selection can keep shared `how` and replace `architect`:
+
+```json
+{
+  "packages": [
+    {
+      "source": "/home/jack/git/pstack",
+      "skills": ["skills/how/**"]
+    },
+    {
+      "source": "./packages/pstack/pstack",
+      "skills": ["skills/architect/**"]
+    }
+  ]
+}
+```
+
+Merge this into existing project settings. The same-source shared entry replaces the personal selection for that project, so it must list every shared skill the project should retain. Select replacements from the project package without also enabling the shared same-named skills. Apply the same pattern independently to Matt's collection.
+
+Merge `upstream/main` into the shared `pi` branch for upstream updates. Merge the validated `pi` branch into a project branch when that project is ready. Editing a project worktree changes the project variant, not the shared checkout.
+
+## Compatibility limits
+
+The Pi manifest loads skills only. Cursor agents, Task calls, sticky mode metadata, model aliases, external plugins, and Cursor automations are not registered by it. Candidate workflows must use available Pi tools and authenticated models without weakening their verification requirements. Session approval rules take precedence over broader autonomy claims in imported skills.
