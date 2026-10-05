@@ -20,7 +20,7 @@ Edit the matching entry in `~/.pi/agent/settings.json`. Skill filters use packag
 
 Matt's initial selection comes from locally available session evidence, including explicit user commands and skill-file loads. Loads can indicate inspection rather than execution. Evidence and loader validation are stored under `~/.pi/agent/audits/`.
 
-Legacy Matt symlinks under `~/.agents/skills` remain intact, but `.ignore` excludes them from Pi auto-discovery. This prevents unselected skills from bypassing package filters and project overrides. Other harnesses that honor this ignore file may also hide the links.
+The personal Pi package entries are the only installation mechanism for these collections. Legacy Matt symlinks under `~/.agents/skills` and `~/.claude/skills` were removed, along with the temporary discovery-ignore workaround. Add or remove selected skills in Pi settings rather than running the upstream linking script. Claude no longer receives Matt's skills through those removed links.
 
 Restart Pi or run `/reload` after changing resources. After relocating the current session's working directory, restart from `/home/jack/git/cursor-plugins` instead of continuing from the old directory identity.
 
