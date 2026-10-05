@@ -1,6 +1,6 @@
 # Use this fork with Pi
 
-This fork exposes pstack as a local Pi skill package. The package manifest is `../package.json`; personal and trusted project Pi settings select which skills load. Packaging does not implement Cursor's runtime or port every workflow.
+This fork exposes pstack as a local Pi skill package. The package manifest is `../package.json` relative to this document, at the `pstack/` component root; personal and trusted project Pi settings select which skills load. Packaging does not implement Cursor's runtime or port every workflow. See [Fork maintenance](./fork-maintenance.md) for the agent-owned upstream update procedure and staging helper.
 
 ## Shared editing locations
 
@@ -30,7 +30,7 @@ Matt's initial selection comes from locally available session evidence, includin
 
 The personal Pi package entries are the only installation mechanism for these collections. Legacy Matt symlinks under `~/.agents/skills` and `~/.claude/skills` were removed, along with the temporary discovery-ignore workaround. Add or remove selected skills in Pi settings rather than running the upstream linking script. Claude no longer receives Matt's skills through those removed links.
 
-Restart Pi or run `/reload` after changing resources. After relocating the current session's working directory, restart from `/home/jack/git/cursor-plugins` instead of continuing from the old directory identity.
+Restart Pi or run `/reload` after changing resources. After relocating the current session's working directory, restart from the canonical component root `/home/jack/git/cursor-plugins/pstack` instead of continuing from the old directory identity.
 
 ## Substitute project versions
 

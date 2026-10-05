@@ -2,6 +2,11 @@
   "name": "jchidley-pstack",
   "private": true,
   "keywords": ["pi-package"],
+  "scripts": {
+    "check": "node scripts/check-customizations.mjs",
+    "test": "node --test scripts/*.test.mjs",
+    "update:upstream": "node scripts/update-upstream.mjs"
+  },
   "pi": {
     "skills": ["./skills"],
     "extensions": [],

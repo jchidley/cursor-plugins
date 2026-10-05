@@ -16,6 +16,8 @@ fork it. improve it. make it yours. PRs are welcome!
 
 For this fork's Pi package setup, skill selection, and compatibility limits, see [Use this fork with Pi](./docs/pi.md). Start routing with `/skill:ask-pstack`.
 
+For maintenance, ask the coding agent here: **“Update this fork from upstream and keep my customizations.”** The agent owns the [fork maintenance procedure](./docs/fork-maintenance.md), including staging, review, checks, and blocker reporting. Updates are prepared outside the live checkout; activation and pushing are separate gates.
+
 ## install
 
 ```bash
