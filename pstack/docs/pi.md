@@ -14,6 +14,14 @@ Use `/skill:ask-pstack <your situation>` for a recommendation from this collecti
 
 The reusable router pattern is: identify the outcome, choose a narrow route, inspect its source, check installed availability and runtime prerequisites, then recommend the next invocation. Each collection owns its map rather than duplicating another collection's workflows.
 
+## Invocation is opt-in
+
+All pstack skills in this fork are user-invoked by default. The shared Matt fork follows the same policy. They remain discoverable through explicit `/skill:<name>` commands but are excluded from Pi's automatically advertised skill context.
+
+To promote one skill, change its `SKILL.md` frontmatter to `disable-model-invocation: false`, then reload Pi. For a Matt skill, also set `policy.allow_implicit_invocation: true` in its `agents/openai.yaml` to keep Codex metadata aligned. Review its description for a precise automatic trigger before promotion. Change the shared source for all consumers, or the project worktree for a project-specific promotion.
+
+This flag controls discovery, not access to files. Explicitly started workflows can read supporting instructions within their authorized task. Existing startup instructions may also require a skill independently of its metadata. Other installed skill collections are unchanged by this fork policy.
+
 ## Change the personal selection
 
 Edit the matching entry in `~/.pi/agent/settings.json`. Skill filters use package-relative directory paths, not declared command names. The initial pstack selection includes `skills/**` except `skills/teach/**` and `skills/tdd/**`. Those names are provided by Matt's collection instead. The pstack files remain available for project variants.
