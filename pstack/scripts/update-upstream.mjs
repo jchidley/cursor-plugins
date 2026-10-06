@@ -48,11 +48,11 @@ function block(status, message) {
 
 function main() {
   // Reject wrong cwd before even inspecting Git; the updater belongs to this component.
-  if (source !== owner) throw new Error('Run from the canonical pstack component directory owning this updater, not the repository root or another checkout.');
+  if (source !== owner) block('scope-blocked', 'Run from the canonical pstack component directory owning this updater, not the repository root or another checkout.');
   repository = realpathSync(gitPath(['rev-parse', '--show-toplevel'], source));
   evidence.source.repository = repository;
   if (basename(source) !== 'pstack' || dirname(source) !== repository || realpathSync(join(repository, 'pstack')) !== source) {
-    throw new Error('The owning component must be pstack/ directly inside the discovered Git repository root.');
+    block('scope-blocked', 'The owning component must be pstack/ directly inside the discovered Git repository root.');
   }
   assertClean();
   initialHead = git(['rev-parse', 'HEAD']);

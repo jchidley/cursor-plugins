@@ -11,23 +11,34 @@ export function hookSafeEnv(env = process.env) {
     [`GIT_CONFIG_KEY_${count}`]: 'core.hooksPath', [`GIT_CONFIG_VALUE_${count}`]: '/dev/null' };
 }
 export function createRunner(defaultCwd) {
-  function run(command, args, cwd = defaultCwd()) {
+  function run(command, args, cwd = defaultCwd(), exactOutput = false) {
     const remote = command === 'git' && (args[0] === 'fetch' || args[0] === 'remote');
     const result = spawnSync(command, command === 'git' ? ['-c', 'core.hooksPath=/dev/null', ...args] : args,
-      { cwd, env: hookSafeEnv(), encoding: 'utf8' });
+      { cwd, env: hookSafeEnv(), encoding: command === 'git' ? null : 'utf8' });
     // Remote diagnostics may contain credential-bearing URLs. Never expose them, even on failure.
     if (remote) { result.stdout = ''; result.stderr = ''; result.output = [null, '', '']; }
+    else if (command === 'git') {
+      // Decode original bytes, never an already-lossy string. Keep BOMs and literal U+FFFD.
+      const pathOrRef = exactOutput || args.includes('-z') || ['rev-parse', 'symbolic-ref'].includes(args[0]);
+      if (result.stdout) {
+        try { result.stdout = pathOrRef ? new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(result.stdout) : result.stdout.toString('utf8'); }
+        catch { throw new Error('Invalid UTF-8 in Git pathname/ref output; inspect the retained state before running checks.'); }
+      }
+      result.stderr = result.stderr?.toString('utf8') ?? '';
+      result.output = [null, result.stdout, result.stderr];
+    }
     return { ...result, ok: !result.error && result.status === 0 };
   }
-  function gitRaw(args, cwd) {
-    const result = run('git', args, cwd);
-    if (!result.ok) throw new Error(`git ${args.join(' ')} failed: ${result.error?.code || `exit ${result.status}`}`);
+  function gitRaw(args, cwd, exactOutput = args[0] !== 'cat-file') {
+    const result = run('git', args, cwd, exactOutput);
+    const remote = args[0] === 'fetch' || args[0] === 'remote';
+    if (!result.ok) throw new Error(`git ${remote ? args[0] : args.join(' ')} failed: ${result.error?.code || `exit ${result.status}`}${result.stderr ? `\n${result.stderr}` : ''}`);
     return result.stdout;
   }
   // Only scalar Git metadata may be trimmed. Path/content APIs below always use raw output.
   const git = (args, cwd) => gitRaw(args, cwd).trim();
   // rev-parse single-path output has one trailing newline, not arbitrary whitespace.
-  const gitPath = (args, cwd) => gitRaw(args, cwd).replace(/\n$/, '');
+  const gitPath = (args, cwd) => gitRaw(args, cwd, true).replace(/\n$/, '');
   return { run, git, gitRaw, gitPath };
 }
 export function nulPaths(output) {

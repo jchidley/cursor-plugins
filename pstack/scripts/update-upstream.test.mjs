@@ -86,6 +86,44 @@ if (process.env.FAIL_ADOPTION) process.exit(1);
   return { root, remote, source, component, home, git, put, advance, run, stages, checks, baseline, unchanged };
 }
 
+test('invalid UTF-8 extensionless nonexecuting shebang path blocks before checks and retains stage', t => {
+  const f = fixture(t);
+  const file = Buffer.concat([Buffer.from(f.remote + '/pstack/helper-'), Buffer.from([0xff])]);
+  writeFileSync(file, '#!/bin/sh\nexit 99\n', { mode: 0o644 });
+  f.git(f.remote, 'add', '-A');
+  f.git(f.remote, 'commit', '-m', 'invalid pathname fixture');
+  const result = f.run();
+  assert.equal(result.status, 1, result.output);
+  assert.match(result.output, /Invalid UTF-8 in Git pathname\/ref output/);
+  const evidence = evidenceOf(result);
+  assert.equal(evidence.status, 'activation-blocked');
+  assert.equal(evidence.stale, undefined);
+  assert.equal(evidence.stage, f.stages()[0]);
+  assert.equal(f.stages().length, 1);
+  const retained = Buffer.concat([Buffer.from(f.stages()[0] + '/pstack/helper-'), Buffer.from([0xff])]);
+  assert.equal(readFileSync(retained, 'utf8'), '#!/bin/sh\nexit 99\n');
+  assert.ok(existsSync(f.git(f.stages()[0], 'rev-parse', '--path-format=absolute', '--git-path', 'MERGE_HEAD')));
+  assert.equal(f.checks(), '');
+  assert.equal(evidence.checks.some(check => ['npm', 'node'].includes(check.command)), false);
+  assert.equal(evidence.notRun.length, 4);
+  f.unchanged();
+});
+
+for (const file of ['pstack/helper-\uFFFD', 'pstack/\uFEFFhelper-雪 space\t\n  ']) {
+  test('valid Unicode extensionless shebang remains a review blocker: ' + JSON.stringify(file), t => {
+    const f = fixture(t);
+    f.advance(file, '#!/bin/sh\nexit 99\n');
+    const result = f.run();
+    assert.equal(result.status, 1, result.output);
+    const evidence = evidenceOf(result);
+    assert.equal(evidence.status, 'review-required');
+    assert.ok(result.output.includes(JSON.stringify(file)), result.output);
+    assert.equal(f.stages().length, 1);
+    assert.equal(f.checks(), '');
+    f.unchanged();
+  });
+}
+
 test('already-current component creates no stage or checks', t => {
   const f = fixture(t);
   const result = f.run();
@@ -96,15 +134,36 @@ test('already-current component creates no stage or checks', t => {
   f.unchanged();
 });
 
+function recordUpdaterGit(f) {
+  const bin = join(f.home, 'git-bin');
+  const log = join(f.home, 'git-calls');
+  const realGit = spawnSync('sh', ['-c', 'command -v git'], { encoding: 'utf8' });
+  assert.equal(realGit.status, 0, realGit.stderr);
+  f.put(bin, 'git', `#!/bin/sh
+printf '%s\\n' "$*" >> ${quote(log)}
+exec ${quote(realGit.stdout.trim())} "$@"
+`);
+  chmodSync(join(bin, 'git'), 0o755);
+  return { PATH: bin + ':' + process.env.PATH, calls: () => existsSync(log) ? readFileSync(log, 'utf8') : '' };
+}
+
 for (const cwd of ['repository', 'nested', 'unrelated']) {
   test(`rejects ${cwd} cwd before Git operations`, t => {
     const f = fixture(t);
     f.advance();
     const refs = f.git(f.source, 'for-each-ref');
     const directory = cwd === 'repository' ? f.source : cwd === 'nested' ? join(f.component, 'scripts') : f.remote;
-    const result = f.run({}, directory);
+    const recorded = recordUpdaterGit(f);
+    const result = f.run({ PATH: recorded.PATH }, directory);
     assert.equal(result.status, 1, result.output);
     assert.match(result.output, /canonical pstack component directory owning this updater/);
+    const evidence = evidenceOf(result);
+    assert.equal(evidence.status, 'scope-blocked');
+    assert.equal(evidence.stage, null);
+    assert.deepEqual(evidence.checks, []);
+    assert.equal(evidence.notRun.length, 4);
+    assert.equal(recorded.calls(), '', 'wrong cwd must not invoke Git, including network commands');
+    assert.equal(f.checks(), '');
     assert.equal(f.git(f.source, 'for-each-ref'), refs);
     assert.deepEqual(f.stages(), []);
     f.unchanged();
@@ -114,9 +173,24 @@ for (const cwd of ['repository', 'nested', 'unrelated']) {
 test('owning component cannot itself be the Git repository root', t => {
   const f = fixture(t);
   f.git(f.component, 'init', '-b', 'component-only');
-  const result = f.run();
+  const before = [f.source, f.component].map(root => ({
+    refs: f.git(root, 'for-each-ref'), status: f.git(root, 'status', '--porcelain'),
+  }));
+  const recorded = recordUpdaterGit(f);
+  const result = f.run({ PATH: recorded.PATH });
   assert.equal(result.status, 1, result.output);
   assert.match(result.output, /directly inside the discovered Git repository root/);
+  const evidence = evidenceOf(result);
+  assert.equal(evidence.status, 'scope-blocked');
+  assert.equal(evidence.stage, null);
+  assert.deepEqual(evidence.checks, []);
+  assert.equal(evidence.notRun.length, 4);
+  assert.equal(recorded.calls(), '-c core.hooksPath=/dev/null rev-parse --show-toplevel\n',
+    'wrong component may only discover the repository, not mutate Git or contact remotes');
+  assert.deepEqual([f.source, f.component].map(root => ({
+    refs: f.git(root, 'for-each-ref'), status: f.git(root, 'status', '--porcelain'),
+  })), before);
+  assert.equal(f.checks(), '');
   assert.deepEqual(f.stages(), []);
 });
 
@@ -180,7 +254,7 @@ test('unadvertised remote HEAD blocks without default-branch guessing', t => {
   f.git(f.remote, 'symbolic-ref', 'HEAD', 'refs/heads/missing-default');
   const result = f.run();
   assert.equal(result.status, 1, result.output);
-  assert.match(result.output, /remote set-head upstream --auto failed/);
+  assert.match(result.output, /git remote failed/);
   assert.deepEqual(f.stages(), []);
   f.unchanged();
 });
@@ -642,7 +716,7 @@ exec ${quote(realGit)} "$@"
   chmodSync(join(bin, 'git'), 0o755);
   const result = f.run({ PATH: bin + ':' + process.env.PATH });
   assert.equal(result.status, 1, result.output);
-  assert.match(result.output, /git fetch upstream failed/);
+  assert.match(result.output, /git fetch failed/);
   assert.match(result.output, /Fetching configured upstream remote: upstream/);
   assert.ok(!result.output.includes(secret));
   assert.ok(!result.output.includes(fakeUrl));
